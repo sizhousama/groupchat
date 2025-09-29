@@ -1,0 +1,33 @@
+{
+  "name": "group-chat",
+  "version": "1.0.0",
+  "description": "群聊网站 - 支持学号登录、实时聊天、在线状态、消息记录",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "echo 'Building for production...'",
+    "deploy": "echo 'Ready for deployment'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "sqlite3": "^5.1.6",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": ["群聊", "websocket", "实时聊天", "nodejs", "express"],
+  "author": "您的名字",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/group-chat.git"
+  }
+}

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: group-chat-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        fromService:
+          type: web
+          name: group-chat-backend
+          property: port
+    healthCheckPath: /
+    domains:
+      - group-chat-backend.onrender.com
