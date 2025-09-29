@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>群聊系统 - 聊天室</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .chat-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* 左侧边栏 */
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #e1e5e9;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e1e5e9;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .time-filter {
+            padding: 15px;
+            border-bottom: 1px solid #e1e5e9;
+        }
+        
+        .time-filter label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .time-range-inputs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .time-range-inputs input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .time-presets {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .preset-btn {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .preset-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .preset-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .online-users {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .online-users-header {
+            padding: 15px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .user-list {
+            padding: 0;
+            list-style: none;
+        }
+        
+        .user-item {
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .user-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+        }
+        
+        .user-status.offline {
+            background: #6c757d;
+        }
+        
+        /* 主聊天区域 */
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e1e5e9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            min-width: 60px;
+            height: 36px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .mobile-menu-btn:hover {
+            background: #5a67d8;
+        }
+        
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        
+        .chat-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .online-count {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message.own {
+            margin-left: auto;
+            align-items: flex-end;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #666;
+            width: fit-content;
+        }
+        
+        .message.own .message-header {
+            justify-content: flex-end;
+            align-self: flex-end;
+        }
+        
+        .message-content {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            word-wrap: break-word;
+            line-height: 1.4;
+            width: fit-content;
+            min-width: 60px;
+            max-width: 100%;
+            display: inline-block;
+        }
+        
+        .message.own .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .chat-input-container {
+            background: white;
+            padding: 15px 20px;
+            border-top: 1px solid #e1e5e9;
+        }
+        
+        .chat-input-form {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 16px;
+            resize: none;
+            max-height: 100px;
+            min-height: 40px;
+            line-height: 1.4;
+        }
+        
+        .chat-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .send-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s ease;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -300px;
+                z-index: 1000;
+                transition: left 0.3s ease;
+                height: 100vh;
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .sidebar-overlay.active {
+                display: block;
+            }
+            
+            .chat-main {
+                width: 100%;
+            }
+            
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+            
+            .chat-header {
+                padding: 15px;
+            }
+            
+            .chat-title {
+                flex: 1;
+                text-align: center;
+                margin: 0 15px;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+            
+            .message-content {
+                max-width: 280px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .message {
+                max-width: 90%;
+            }
+            
+            .message-content {
+                max-width: 240px;
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .system-message {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- 遮罩层 -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+        
+        <!-- 左侧边栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="user-info">
+                    <div class="user-name" id="currentUserName">用户</div>
+                    <button class="logout-btn" onclick="logout()">退出</button>
+                </div>
+            </div>
+            
+            <div class="time-filter">
+                <label>消息时间范围</label>
+                <div class="time-range-inputs">
+                    <input type="date" id="startDate" />
+                    <input type="date" id="endDate" />
+                </div>
+                <div class="time-presets">
+                    <button class="preset-btn active" data-days="7">最近7天</button>
+                    <button class="preset-btn" data-days="30">最近30天</button>
+                    <button class="preset-btn" data-days="90">最近90天</button>
+                    <button class="preset-btn" data-days="0">全部</button>
+                </div>
+            </div>
+            
+            <div class="online-users">
+                <div class="online-users-header">在线用户</div>
+                <ul class="user-list" id="userList">
+                    <li class="loading">加载中...</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 主聊天区域 -->
+        <div class="chat-main">
+            <div class="chat-header">
+                <button class="mobile-menu-btn" onclick="openSidebar()">☰ 菜单</button>
+                <div class="chat-title">群聊</div>
+                <div class="online-count" id="onlineCount">0人在线</div>
+            </div>
+            
+            <div class="messages-container" id="messagesContainer">
+                <div class="loading">加载消息中...</div>
+            </div>
+            
+            <div class="chat-input-container">
+                <form class="chat-input-form" id="messageForm">
+                    <textarea 
+                        class="chat-input" 
+                        id="messageInput" 
+                        placeholder="输入消息..." 
+                        rows="1"
+                        maxlength="500"
+                    ></textarea>
+                    <button type="submit" class="send-btn" id="sendBtn">发送</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket;
+        let currentUser;
+        let currentDateRange = { days: 7 };
+        
+        // 页面加载时初始化
+        window.addEventListener('load', function() {
+            // 检查登录状态
+            const userInfo = localStorage.getItem('userInfo');
+            if (!userInfo) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                currentUser = JSON.parse(userInfo);
+                document.getElementById('currentUserName').textContent = currentUser.name || currentUser.studentId;
+                
+                // 初始化Socket连接
+                initializeSocket();
+                
+                // 设置默认时间范围
+                setDateRange(7);
+                
+                // 绑定事件
+                bindEvents();
+                
+            } catch (error) {
+                console.error('用户信息解析错误:', error);
+                localStorage.removeItem('userInfo');
+                window.location.href = 'login.html';
+            }
+        });
+        
+        function initializeSocket() {
+            // 根据环境选择Socket.io连接地址
+            const socketUrl = 'http://localhost:3000'
+                
+            socket = io(socketUrl, {
+                transports: ['websocket', 'polling']
+            });
+            
+            // 连接成功
+            socket.on('connect', function() {
+                console.log('连接成功');
+                // 加入聊天室
+                socket.emit('join', currentUser);
+                // 请求消息历史
+                requestMessages();
+            });
+            
+            // 接收新消息
+            socket.on('newMessage', function(message) {
+                addMessageToChat(message, false);
+                scrollToBottom();
+            });
+            
+            // 接收消息历史
+            socket.on('messageHistory', function(messages) {
+                displayMessages(messages);
+            });
+            
+            // 用户列表更新
+            socket.on('userListUpdate', function(users) {
+                updateUserList(users);
+            });
+            
+            // 用户加入通知
+            socket.on('userJoined', function(data) {
+                addSystemMessage(`${data.user.name || data.user.studentId} 加入了聊天`);
+            });
+            
+            // 用户离开通知
+            socket.on('userLeft', function(data) {
+                addSystemMessage(`${data.user.name || data.user.studentId} 离开了聊天`);
+            });
+            
+            // 连接错误
+            socket.on('connect_error', function(error) {
+                console.error('连接错误:', error);
+                addSystemMessage('连接服务器失败，请刷新页面重试');
+            });
+        }
+        
+        function bindEvents() {
+            // 发送消息表单
+            document.getElementById('messageForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                sendMessage();
+            });
+            
+            // 输入框回车发送
+            const messageInput = document.getElementById('messageInput');
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // 自动调整输入框高度
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+            });
+            
+            // 时间范围选择
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const days = parseInt(this.dataset.days);
+                    setDateRange(days);
+                    setActivePreset(this);
+                    requestMessages();
+                    
+                    // 移动端选择后自动关闭侧边栏
+                    if (window.innerWidth <= 768) {
+                        setTimeout(closeSidebar, 300);
+                    }
+                });
+            });
+            
+            // 日期输入变化
+            document.getElementById('startDate').addEventListener('change', function() {
+                const startDate = this.value;
+                const endDate = document.getElementById('endDate').value;
+                if (startDate) {
+                    currentDateRange = { startDate, endDate: endDate || new Date().toISOString().split('T')[0] };
+                    clearActivePreset();
+                    requestMessages();
+                }
+            });
+            
+            document.getElementById('endDate').addEventListener('change', function() {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = this.value;
+                if (startDate && endDate) {
+                    currentDateRange = { startDate, endDate };
+                    clearActivePreset();
+                    requestMessages();
+                }
+            });
+            
+            // 点击消息区域关闭侧边栏（移动端）
+            document.getElementById('messagesContainer').addEventListener('click', handleMainAreaClick);
+        }
+        
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message || !socket) {
+                return;
+            }
+            
+            // 发送消息
+            socket.emit('sendMessage', {
+                content: message,
+                user: currentUser
+            });
+            
+            // 清空输入框
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+        }
+        
+        function requestMessages() {
+            if (socket) {
+                socket.emit('getMessages', currentDateRange);
+            }
+        }
+        
+        function displayMessages(messages) {
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '';
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="loading">该时间段内暂无消息</div>';
+                return;
+            }
+            
+            messages.forEach(message => {
+                addMessageToChat(message, true);
+            });
+            
+            scrollToBottom();
+        }
+        
+        function addMessageToChat(message, isHistory = false) {
+            const container = document.getElementById('messagesContainer');
+            
+            // 如果是首次加载，清空loading提示
+            if (container.querySelector('.loading') && !isHistory) {
+                container.innerHTML = '';
+            }
+            
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${message.user.studentId === currentUser.studentId ? 'own' : ''}`;
+            
+            const time = new Date(message.timestamp).toLocaleString('zh-CN', {
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            messageEl.innerHTML = `
+                <div class="message-header">
+                    <span class="sender">${message.user.name || message.user.studentId}</span>
+                    <span class="time">${time}</span>
+                </div>
+                <div class="message-content">${escapeHtml(message.content)}</div>
+            `;
+            
+            if (isHistory) {
+                container.appendChild(messageEl);
+            } else {
+                container.insertBefore(messageEl, container.querySelector('.loading'));
+            }
+        }
+        
+        function addSystemMessage(text) {
+            const container = document.getElementById('messagesContainer');
+            const messageEl = document.createElement('div');
+            messageEl.className = 'system-message';
+            messageEl.textContent = text;
+            container.appendChild(messageEl);
+            scrollToBottom();
+        }
+        
+        function updateUserList(users) {
+            const userList = document.getElementById('userList');
+            const onlineCount = document.getElementById('onlineCount');
+            
+            userList.innerHTML = '';
+            onlineCount.textContent = `${users.length}人在线`;
+            
+            users.forEach(user => {
+                const li = document.createElement('li');
+                li.className = 'user-item';
+                li.innerHTML = `
+                    <div class="user-status ${user.online ? '' : 'offline'}"></div>
+                    <span>${user.name || user.studentId}</span>
+                `;
+                userList.appendChild(li);
+            });
+        }
+        
+        function setDateRange(days) {
+            if (days === 0) {
+                currentDateRange = { days: 0 };
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
+            } else {
+                currentDateRange = { days };
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - days);
+                
+                document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+                document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+            }
+        }
+        
+        function setActivePreset(activeBtn) {
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            activeBtn.classList.add('active');
+        }
+        
+        function clearActivePreset() {
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+        }
+        
+        function scrollToBottom() {
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                if (socket) {
+                    socket.disconnect();
+                }
+                localStorage.removeItem('userInfo');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // 移动端侧边栏控制
+        function openSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+        
+        // 点击消息区域时关闭侧边栏（移动端）
+        function handleMainAreaClick() {
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        }
+        
+        // 页面关闭时断开连接
+        window.addEventListener('beforeunload', function() {
+            if (socket) {
+                socket.disconnect();
+            }
+        });
+    </script>
+</body>
+</html>
